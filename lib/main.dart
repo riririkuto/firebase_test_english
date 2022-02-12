@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 
-void main() {
-  runApp(const MyApp());
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -32,51 +37,60 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  String a='a';
+  String a = 'a';
+  int times = 0;
 
- List b=[];
-  int number=0;
+  List b = [];
+  int number = 0;
+
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
 
         title: Text(widget.title),
       ),
-      body:SafeArea(
-          child: ListView.builder(
-            itemCount: number,
-            itemBuilder: (BuildContext context, int index) {
-              return Container(
-                padding: EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(width: 1.0, color: Colors.grey),
-                  ),
+      body: SafeArea(
+        child: ListView.builder(
+          itemCount: number,
+          itemBuilder: (BuildContext context, int index) {
+            return Container(
+              padding: EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(width: 1.0, color: Colors.grey),
                 ),
-                child: ListTile(
-                  leading: Icon(Icons.add),
-                  title: Text(b[index]),
-                ),
-              );
-            },
-      ),),
+              ),
+              child: ListTile(
+                leading: Icon(Icons.add),
+                title: Text(b[index]),
+              ),
+            );
+          },
+        ),),
       floatingActionButton: FloatingActionButton(
-        onPressed:() {
-setState(() {
-           b.clear();
-           number=100;
-           generateWordPairs().take(100).forEach((element) {
+        onPressed: () {
+          setState(() {
+            b.clear();
+            number = 100;
+            generateWordPairs().take(100).forEach((element) {
+              a = element.asCamelCase;
+              b.add(a);
+            });
+            while(times <= 99){
+              FirebaseFirestore.instance
+                  .collection('word100')
+                  .doc('word$times')
+                  .set({'word': b[times],});
+            times++;}
+          },
 
-            a=element.asCamelCase;b.add(a);});
-
-
-});
+          );
         },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
 
-    );}
+    );
+  }
 }
