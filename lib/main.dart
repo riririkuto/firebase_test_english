@@ -147,7 +147,7 @@ String storeinformation='';
           setState(() {
 
             generateWordPairs().take(100).forEach((element) {
-              wordlist.add(element.asCamelCase);
+              wordlist.add(element.asCamelCase.toLowerCase());
             });
          print(wordlist.length);
             while(times <= storetimes+99){
