@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
-
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,76 +12,154 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      debugShowCheckedModeBanner: false,
+      home: FireStore(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+class FireStore extends StatefulWidget {
+  const FireStore({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _FireStoreState createState() => _FireStoreState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  String a = 'a';
-  int times = 0;
-
-  List b = [];
-  int number = 0;
-
+class _FireStoreState extends State<FireStore> {
+  // ドキュメント情報を入れる箱を用意
+  List<DocumentSnapshot> documentList = [];
+  String _outputText = "";
+  int times=0;
+  int number=0;
+  List wordlist=[];
+String a='';
+int storetimes=0;
+String storeinformation='';
   @override
   Widget build(BuildContext context) {
+    void _handleOutputText(String inputText) {
+      setState(() {
+        _outputText = inputText;
+      });
+    }
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // データの追加
+           SingleChildScrollView(
+             child: TextField(
+                        maxLength: 16,
+                        maxLengthEnforced: true,
+                        style: TextStyle(color: Colors.black),
+                        maxLines: 1,
+                        onChanged: _handleOutputText,
+                      ),
+           ),
 
-        title: Text(widget.title),
-      ),
-      body: SafeArea(
-        child: ListView.builder(
-          itemCount: number,
-          itemBuilder: (BuildContext context, int index) {
-            return Container(
-              padding: EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(width: 1.0, color: Colors.grey),
+
+
+              ElevatedButton(
+                child: Text("add"),
+                onPressed: () async {
+               print(wordlist);
+
+                },
+              ),
+              // データの読み込み
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.red,
+                ),
+                child: Text('Load'),
+                onPressed: () async {
+                  // 指定コレクションのドキュメント一覧を取得
+                  final snapshot = await FirebaseFirestore.instance
+                      .collection('word100')
+                      .get();
+                  // ドキュメント一覧を配列で格納
+                  setState(() {
+                    documentList = snapshot.docs;
+                  });
+                },
+              ),
+
+
+              ElevatedButton(
+                child: Text("wordlist"),
+                onPressed: () async {
+                  print(wordlist);
+                  if(wordlist.indexOf(_outputText)>=0){
+                    print(wordlist.indexOf(_outputText));
+                    setState(() {
+                      storeinformation='IDは${wordlist.indexOf(_outputText)}です';
+                    });
+
+                  }
+                  else{
+                    print('まだ登録されていません');
+                    setState(() {
+
+                      storeinformation='登録されていないので追加します。';
+                      wordlist.add(_outputText);
+                      storetimes=storetimes+1;
+                      FirebaseFirestore.instance
+                          .collection('word100')
+                          .doc('word${storetimes}')
+                          .set({'word': wordlist[storetimes],'id':storetimes});
+                    });
+                  }
+                },
+              ),
+
+              Text(storeinformation),
+              // 表示
+              Container(
+                margin: EdgeInsets.only(top:10),
+                height:400,
+                child:
+              SingleChildScrollView(
+                child: Column(
+                  children: documentList.map((document) {
+                    wordlist.add('${document['word']}');
+                    print(wordlist);
+
+                    return ListTile(
+                      title: Text('name:${document['word']} id:${document['id']}'),
+                    );
+
+                  }).toList(),
+
                 ),
               ),
-              child: ListTile(
-                leading: Icon(Icons.add),
-                title: Text(b[index]),
-              ),
-            );
-          },
-        ),),
+              )
+            ],
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            b.clear();
-            number = 100;
+
             generateWordPairs().take(100).forEach((element) {
-              a = element.asCamelCase;
-              b.add(a);
+              wordlist.add(element.asCamelCase);
             });
-            while(times <= 99){
+         print(wordlist.length);
+            while(times <= storetimes+99){
+
               FirebaseFirestore.instance
                   .collection('word100')
                   .doc('word$times')
-                  .set({'word': b[times],});
-            times++;}
+                  .set({'word': wordlist[times],'id':times});
+              times++;
+
+            }
+            storetimes=times;
           },
 
           );
@@ -92,5 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
 
     );
+
   }
+
 }
